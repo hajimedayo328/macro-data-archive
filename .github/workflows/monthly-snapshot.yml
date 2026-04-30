@@ -1,0 +1,48 @@
+name: Monthly Macro Data Snapshot
+
+on:
+  schedule:
+    # 毎月1日 18:00 UTC = 翌日 03:00 JST
+    - cron: '0 18 1 * *'
+  workflow_dispatch:  # 手動実行も可
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set snapshot date
+        id: date
+        run: |
+          echo "yyyymm=$(date -u +%Y%m)" >> $GITHUB_OUTPUT
+          echo "yyyy=$(date -u +%Y)" >> $GITHUB_OUTPUT
+          echo "mm=$(date -u +%m)" >> $GITHUB_OUTPUT
+          echo "iso=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Fetch World Bank indicators
+        run: bash scripts/fetch_worldbank.sh ${{ steps.date.outputs.yyyy }} ${{ steps.date.outputs.mm }}
+
+      - name: Fetch IMF indicators
+        run: bash scripts/fetch_imf.sh ${{ steps.date.outputs.yyyy }} ${{ steps.date.outputs.mm }}
+
+      - name: Generate snapshot manifest
+        run: bash scripts/manifest.sh ${{ steps.date.outputs.iso }}
+
+      - name: Commit snapshot
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ snapshots.log
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "snapshot ${{ steps.date.outputs.iso }} (World Bank + IMF)"
+          git push
