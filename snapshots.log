@@ -4,3 +4,9 @@ snapshot: 2026-04-30
   imf_files: 0
   total_bytes: 39852360
   commit_sha: 8d7b268e92933a6e1d5903b7652a6d546f033029
+---
+snapshot: 2026-05-01
+  worldbank_files: 20
+  imf_files: 0
+  total_bytes: 79704720
+  commit_sha: c331bdef0a4a33ec66c0a7b3b5045a8d84417d53
